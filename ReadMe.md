@@ -200,8 +200,8 @@ GET /stats
 
 Ресурсы
 
-Документация FastAPI
-Документация PyTorch
-Документация EasyOCR
-Документация PostgreSQL
-Документация Tailwind CSS
+- Документация FastAPI
+- Документация PyTorch
+- Документация EasyOCR
+- Документация PostgreSQL
+- Документация Tailwind CSS
