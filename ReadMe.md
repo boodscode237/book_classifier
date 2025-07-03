@@ -1,59 +1,207 @@
-# Book Page Classifier API
+# API Классификатора Страниц Книг
+API Классификатора Страниц Книг — это серверное приложение на базе FastAPI, предназначенное для классификации изображений страниц книг на четыре категории: Обложка, Титульная страница, Оборот титульной страницы и Колофон. API использует модель машинного обучения, объединяющую обработку изображений и оптическое распознавание символов (OCR), для точной классификации. Этот README объясняет, как был создан API, и предоставляет подробные инструкции по его настройке и использованию, как напрямую, так и через предоставленный HTML-интерфейс.
+## Обзор API
+API построен на FastAPI, современном веб-фреймворке Python, и интегрирует пользовательскую модель PyTorch для классификации изображений, EasyOCR для извлечения текста и базу данных PostgreSQL для хранения данных об изображениях и их классификациях. Он поддерживает загрузку изображений, предсказание их класса, корректировку классификаций, получение сведений о классификациях и просмотр статистики. API настроен на поддержку CORS, что позволяет использовать его с веб-приложениями, размещёнными на других доменах или портах.
+## Основные возможности
 
-This is a FastAPI application that serves a PyTorch model for classifying book pages. The API allows you to upload an image of a book page, get a prediction for its class, and then update the prediction if it's incorrect.
+- Классификация изображений: Загрузка изображения для классификации на один из четырёх типов страниц.
+- Корректировка: Обновление классификаций с пользовательскими метками.
+- Хранение данных: Сохранение изображений и их классификаций в базе данных PostgreSQL.
+- Статистика: Получение статистики по классификациям.
+- Проверка состояния: Мониторинг состояния API и используемого устройства (CPU/GPU).
+- Интеграция с фронтендом: Совместимость с простым HTML-интерфейсом для взаимодействия с пользователем.
 
-## Features
+## Как был создан API
+Разработка API Классификатора Страниц Книг включала несколько ключевых компонентов и этапов, объединяющих машинное обучение, веб-разработку и управление базами данных.
+### 1. Модель машинного обучения
 
--   **Predict Page Class:** Upload an image and get a class prediction (Cover, Title Page, Back Title Page, Colophon).
--   **Store Predictions:** Predictions and images are stored in a PostgreSQL database.
--   **Correct Predictions:** Update the predicted class with a user-defined class.
+**Фреймворк**: Использован PyTorch для создания пользовательской модели MultiModalClassifier, объединяющей визуальные и текстовые признаки.
+Обработка изображений: В качестве основы используется EfficientNet-B0 для извлечения визуальных признаков. Модель предварительно обучена, последние 10 слоёв настроены для адаптации к задаче, чтобы сохранить общие знания и улучшить точность.
+**Интеграция OCR**: EasyOCR извлекает текст из изображений, который обрабатывается с помощью предварительно настроенного TF-IDF векторизатора для создания текстовых признаков. Эти признаки объединяются с визуальными для классификации.
+**Архитектура**:
+- Визуальный путь: EfficientNet-B0 выдаёт 1280-мерные признаки.
+- Текстовый путь: Нейронная сеть преобразует 100-мерные TF-IDF признаки в 32-мерные.
+- Классификатор: Объединяет визуальные и текстовые признаки (1280 + 32 = 1312 измерений) в финальный слой классификации, выдающий вероятности для 4 классов.
 
-## Project Structure
 
-.├── app│   ├── init.py│   ├── crud.py│   ├── database.py│   ├── main.py│   ├── model.py│   ├── models.py│   ├── preprocessing.py│   └── schemas.py├── tests│   ├── init.py│   └── test_main.py├── .env├── book_page_classifier.pth└── requirements.txt
-## Setup and Installation
+**Обучение**: Модель была обучена (предположительно, так как веса загружаются из book_page_classifier.pth) на наборе данных изображений страниц книг, с предварительной обработкой текстовых признаков через TF-IDF векторизатор (tfidf_vectorizer.pkl).
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository_url>
-    cd <repository_name>
-    ```
+### 2. Бэкенд на FastAPI
 
-2.  **Create a virtual environment:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    ```
+**Выбор фреймворка**: FastAPI выбран за поддержку асинхронных операций, автоматическую генерацию документации OpenAPI и простоту интеграции с Python-библиотеками.
+Эндпоинты:
 
-3.  **Install the required packages:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+- /predict: Обрабатывает загрузку изображений и возвращает предсказанный класс, его название и идентификатор изображения.
+- /correct/{image_id}: Обновляет классификацию с пользовательским классом.
+- /classification/{image_id}: Возвращает подробности классификации для изображения.
+- /health: Возвращает статус API и информацию об устройстве.
+- /stats: Предоставляет статистику классификаций по классам.
 
-4.  **Set up the PostgreSQL database:**
-    -   Make sure you have PostgreSQL installed and running.
-    -   Create a new database for this application.
-    -   Create a `.env` file in the root of the project and add your database URL:
-        ```
-        DATABASE_URL="postgresql://user:password@postgresserver/db"
-        ```
 
-5.  **Place your model file:**
-    -   Make sure the `book_page_classifier.pth` file is in the root of the project directory.
+Управление жизненным циклом: Использует асинхронный контекстный менеджер (lifespan) для инициализации и закрытия пула подключений к базе данных и загрузки модели при старте.
 
-## Running the Application
+### 3. Интеграция с базой данных
 
-To run the FastAPI application locally, use the following command:
+База данных: PostgreSQL хранит данные изображений (тип BYTEA) и классификации (тип INTEGER для классов модели и пользователя).
+Схема: Таблица image_classifications хранит идентификатор изображения (UUID), данные изображения, класс модели, класс пользователя и временные метки.
+Библиотека: asyncpg обеспечивает асинхронные операции с базой данных, повышая производительность при одновременных запросах.
 
-```bash
-uvicorn app.main:app --reload
-The API will be available at http://127.0.0.1:8000.API EndpointsPOST /predict/Description: Upload an image to get a class prediction.Request Body: multipart/form-data with a file field named file.Response:{
-  "id": 1,
-  "predicted_class": 0
+### 4. Обработка OCR
+
+Библиотека: EasyOCR поддерживает извлечение текста на нескольких языках (в данном случае русский и английский).
+Извлечение признаков: Текст очищается (перевод в нижний регистр, удаление специальных символов) и преобразуется в TF-IDF признаки с помощью предварительно настроенного векторизатора. При отсутствии файла векторизатора используются нулевые признаки.
+
+### 5. Настройка CORS
+
+Цель: Разрешает доступ к API с любого источника, что позволяет интегрировать его с фронтенд-приложениями на других доменах или портах.
+Реализация: Использует CORSMiddleware FastAPI с настройками allow_origins=["*"], allow_methods=["*"] и allow_headers=["*"]. Поддержка авторизационных данных отключена (allow_credentials=False) из-за использования wildcard-источников.
+
+### 6. Обработка ошибок и логирование
+
+Исключения: Обрабатываются через try-catch блоки с возвратом HTTP-исключений (400, 404, 500) для некорректных входных данных, отсутствующих изображений или серверных ошибок.
+Логирование: Использует модуль logging Python для записи событий старта, завершения и ошибок, упрощая отладку.
+
+### 7. Зависимости
+
+Основные библиотеки: fastapi, uvicorn, torch, torchvision, pillow, numpy, opencv-python, easyocr, asyncpg, python-dotenv, joblib, scikit-learn.
+Переменные окружения (через .env) настраивают подключение к базе данных.
+
+### Требования
+
+- Python 3.7+: Для запуска бэкенда и обслуживания фронтенда.
+- PostgreSQL: Для хранения данных изображений и классификаций.
+- Интернет-соединение: Для загрузки Tailwind CSS через CDN во фронтенде.
+- Браузер: Для доступа к фронтенду или тестирования API.
+- Опционально: Node.js для альтернативного обслуживания фронтенда (например, с http-server).
+
+
+# Как использовать API
+
+API можно использовать напрямую через HTTP-запросы (например, с помощью curl или Postman) или через предоставленный HTML-интерфейс. Ниже приведены подробности для обоих подходов.
+Прямое использование API
+Используйте инструменты, такие как curl или Postman, для взаимодействия с эндпоинтами. API доступен по адресу http://localhost:8000 при локальном запуске.
+Эндпоинты
+```
+POST /predict
+
+Назначение: Загрузка изображения для классификации.
+- Запрос:
+- Метод: POST
+- Content-Type: multipart/form-data
+- Тело: Поле формы file с изображением (PNG, JPG, GIF).
+- Пример (curl):curl -X POST -F "file=@path/to/image.jpg" http://localhost:8000/predict
+
+
+
+
+Ответ:{
+    "image_id": "uuid-string",
+    "predicted_class": 0,
+    "class_name": "Обложка",
+    "message": "Изображение успешно классифицировано"
 }
-PUT /predict/{image_id}Description: Update the user-defined class for a specific image.Path Parameter: image_id (integer) - The ID of the image to update.Query Parameter: user_class (integer) - The new class for the image.Response:{
-  "id": 1,
-  "predicted_class": 0,
-  "user_class": 1
+
+
+predicted_class: 0 (Обложка), 1 (Титульная страница), 2 (Оборот титульной страницы), 3 (Колофон).
+Ошибки: 400 (неверный файл), 500 (ошибка сервера).
+
+PUT /correct/{image_id}
+
+Назначение: Корректировка классификации с пользовательским классом.
+Запрос:
+Метод: PUT
+Content-Type: multipart/form-data
+Тело: Поле формы user_class (целое число 0-3).
+Параметр URL: image_id (UUID из /predict).
+Пример (curl):curl -X PUT -F "user_class=1" http://localhost:8000/correct/550e8400-e29b-41d4-a716-446655440000
+
+Ответ:{
+    "image_id": "uuid-string",
+    "user_class": 1,
+    "class_name": "Титульная страница",
+    "message": "Классификация успешно исправлена"
 }
-TestingTo run the tests for this application, use pytest:pytest
+
+
+Ошибки: 400 (неверный image_id или user_class), 404 (изображение не найдено), 500 (ошибка сервера).
+
+
+
+
+GET /classification/{image_id}
+
+Назначение: Получение сведений о классификации.
+Запрос:
+Метод: GET
+Параметр URL: image_id (UUID).
+Пример (curl):curl http://localhost:8000/classification/550e8400-e29b-41d4-a716-446655440000
+
+
+
+
+Ответ:{
+    "image_id": "uuid-string",
+    "model_class": 0,
+    "model_class_name": "Обложка",
+    "user_class": 1,
+    "user_class_name": "Титульная страница",
+    "created_at": "2025-07-03T04:25:00Z",
+    "updated_at": "2025-07-03T04:30:00Z"
+}
+
+
+user_class и user_class_name равны null, если корректировка не проводилась.
+Ошибки: 400 (неверный image_id), 404 (изображение не найдено), 500 (ошибка сервера).
+
+
+
+
+GET /health
+
+Назначение: Проверка состояния API.
+Запрос:
+Метод: GET
+Пример (curl):curl http://localhost:8000/health
+
+
+
+
+Ответ:{
+    "status": "healthy",
+    "device": "cpu"
+}
+
+
+
+
+GET /stats
+
+Назначение: Получение статистики классификаций.
+Запрос:
+Метод: GET
+Пример (curl):curl http://localhost:8000/stats
+
+
+
+
+Ответ:{
+    "statistics": [
+        {
+            "class": 0,
+            "class_name": "Обложка",
+            "total_predictions": 10,
+            "user_corrections": 2
+        },
+        ...
+    ]
+}
+
+```
+
+Ресурсы
+
+Документация FastAPI
+Документация PyTorch
+Документация EasyOCR
+Документация PostgreSQL
+Документация Tailwind CSS
