@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book Page Classifier</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen bg-gray-50 font-sans">
+    <header
+      class="bg-white shadow-md w-full p-4 flex justify-between items-center"
+    >
+      <div class="flex items-center space-x-3">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#E60000"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+        </svg>
+        <h1 class="text-2xl font-bold text-gray-800 tracking-tight">
+          Book Page Classifier
+        </h1>
+      </div>
+      <nav>
+        <button
+          id="uploadBtn"
+          class="px-4 py-2 rounded-lg font-semibold bg-red-600 text-white"
+        >
+          Upload
+        </button>
+        <button
+          id="galleryBtn"
+          class="ml-3 px-4 py-2 rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-red-100"
+        >
+          Gallery
+        </button>
+      </nav>
+    </header>
+    <main id="mainContent" class="p-8">
+      <!-- Upload Section -->
+      <div
+        id="uploadSection"
+        class="w-full max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg border border-gray-200"
+      >
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+          Upload an Image for Classification
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div
+            class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-red-500 hover:bg-red-50"
+          >
+            <input type="file" id="fileInput" accept="image/*" class="hidden" />
+            <div
+              id="preview"
+              class="flex flex-col items-center justify-center h-64"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="text-gray-400 mb-4"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <p class="text-gray-600">Click to browse or drag & drop</p>
+              <p class="text-sm text-gray-400 mt-1">PNG, JPG, GIF up to 10MB</p>
+            </div>
+          </div>
+          <div class="flex flex-col items-center justify-center">
+            <button
+              id="classifyBtn"
+              class="w-full bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              Classify Image
+            </button>
+            <div
+              id="result"
+              class="mt-6 w-full p-4 bg-gray-50 rounded-lg border hidden"
+            >
+              <h3 class="font-bold text-lg mb-3">Classification Result:</h3>
+              <p>
+                <strong>Predicted Class:</strong>
+                <span
+                  id="predictedClass"
+                  class="font-mono bg-red-100 text-red-800 px-2 py-1 rounded"
+                ></span>
+              </p>
+              <p class="text-sm text-gray-500 mt-1">
+                Image ID: <span id="imageId"></span>
+              </p>
+              <div class="mt-4 pt-4 border-t">
+                <h4 class="font-semibold mb-2">
+                  Is this incorrect? Correct it:
+                </h4>
+                <div id="correctionButtons" class="flex flex-wrap gap-2"></div>
+                <p
+                  id="correctionMessage"
+                  class="text-green-600 font-semibold mt-3 hidden"
+                ></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Gallery Section -->
+      <div id="gallerySection" class="w-full max-w-7xl mx-auto p-8 hidden">
+        <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">
+          Image Gallery
+        </h2>
+        <div
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+        >
+          <div
+            class="col-span-full text-center p-8 bg-yellow-50 border border-yellow-200 rounded-lg"
+          >
+            <h3 class="font-bold text-yellow-800">Gallery Feature Pending</h3>
+            <p class="text-yellow-700">
+              This section is ready to display your images once the `/images`
+              endpoint is added to your FastAPI backend.
+            </p>
+            <p class="text-sm text-yellow-600 mt-2">
+              The backend code needs a new function to query and return all
+              entries from the `image_classifications` table.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="text-center py-4 text-sm text-gray-500">
+      © 2025 Book Classifier Interface
+    </footer>
+    <script>
+      const API_URL = "http://localhost:8000";
+      const classNames = ["Cover", "Title Page", "Back Title Page", "Colophon"];
+
+      // Navigation
+      document.getElementById("uploadBtn").addEventListener("click", () => {
+        document.getElementById("uploadSection").classList.remove("hidden");
+        document.getElementById("gallerySection").classList.add("hidden");
+        document
+          .getElementById("uploadBtn")
+          .classList.add("bg-red-600", "text-white");
+        document
+          .getElementById("uploadBtn")
+          .classList.remove("bg-gray-200", "text-gray-700");
+        document
+          .getElementById("galleryBtn")
+          .classList.remove("bg-red-600", "text-white");
+        document
+          .getElementById("galleryBtn")
+          .classList.add("bg-gray-200", "text-gray-700");
+      });
+
+      document.getElementById("galleryBtn").addEventListener("click", () => {
+        document.getElementById("uploadSection").classList.add("hidden");
+        document.getElementById("gallerySection").classList.remove("hidden");
+        document
+          .getElementById("galleryBtn")
+          .classList.add("bg-red-600", "text-white");
+        document
+          .getElementById("galleryBtn")
+          .classList.remove("bg-gray-200", "text-gray-700");
+        document
+          .getElementById("uploadBtn")
+          .classList.remove("bg-red-600", "text-white");
+        document
+          .getElementById("uploadBtn")
+          .classList.add("bg-gray-200", "text-gray-700");
+      });
+
+      // File Input and Preview
+      const fileInput = document.getElementById("fileInput");
+      const preview = document.getElementById("preview");
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            preview.innerHTML = `<img src="${event.target.result}" alt="Preview" class="mx-auto max-h-64 rounded-lg object-contain" />`;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Trigger file input click when preview area is clicked
+      preview.addEventListener("click", () => {
+        fileInput.click();
+      });
+
+      // Classify Image
+      const classifyBtn = document.getElementById("classifyBtn");
+      const resultDiv = document.getElementById("result");
+      const predictedClassSpan = document.getElementById("predictedClass");
+      const imageIdSpan = document.getElementById("imageId");
+      const correctionButtonsDiv = document.getElementById("correctionButtons");
+      const correctionMessageP = document.getElementById("correctionMessage");
+
+      classifyBtn.addEventListener("click", async () => {
+        const file = fileInput.files[0];
+        if (!file) {
+          alert("Please select an image file first.");
+          return;
+        }
+        classifyBtn.disabled = true;
+        classifyBtn.textContent = "Classifying...";
+        resultDiv.classList.add("hidden");
+        correctionMessageP.classList.add("hidden");
+        correctionButtonsDiv.innerHTML = "";
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const response = await fetch(`${API_URL}/predict`, {
+            method: "POST",
+            body: formData,
+          });
+          if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || "Prediction failed.");
+          }
+          const data = await response.json();
+          predictedClassSpan.textContent = data.class_name;
+          imageIdSpan.textContent = data.image_id;
+          resultDiv.classList.remove("hidden");
+
+          // Add correction buttons
+          classNames.forEach((name, index) => {
+            const button = document.createElement("button");
+            button.textContent = name;
+            button.className =
+              "bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm hover:bg-gray-300";
+            if (index === data.predicted_class) {
+              button.disabled = true;
+              button.classList.add("bg-green-200", "text-green-800");
+            }
+            button.addEventListener("click", () =>
+              handleCorrection(data.image_id, index)
+            );
+            correctionButtonsDiv.appendChild(button);
+          });
+        } catch (err) {
+          alert(err.message);
+        } finally {
+          classifyBtn.disabled = false;
+          classifyBtn.textContent = "Classify Image";
+        }
+      });
+
+      async function handleCorrection(imageId, userClass) {
+        const formData = new FormData();
+        formData.append("user_class", userClass);
+
+        try {
+          const response = await fetch(`${API_URL}/correct/${imageId}`, {
+            method: "PUT",
+            body: formData,
+          });
+          if (!response.ok) {
+            throw new Error("Failed to submit correction.");
+          }
+          const updatedResult = await response.json();
+          correctionMessageP.textContent = updatedResult.message;
+          correctionMessageP.classList.remove("hidden");
+          // Update correction buttons
+          Array.from(correctionButtonsDiv.children).forEach((button, index) => {
+            button.disabled = index === userClass;
+            button.classList.toggle("bg-green-200", index === userClass);
+            button.classList.toggle("text-green-800", index === userClass);
+            button.classList.toggle("bg-gray-200", index !== userClass);
+            button.classList.toggle("text-gray-800", index !== userClass);
+          });
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+
+      // Set initial view to upload
+      document.getElementById("uploadSection").classList.remove("hidden");
+      document.getElementById("gallerySection").classList.add("hidden");
+      document
+        .getElementById("uploadBtn")
+        .classList.add("bg-red-600", "text-white");
+      document
+        .getElementById("uploadBtn")
+        .classList.remove("bg-gray-200", "text-gray-700");
+      document
+        .getElementById("galleryBtn")
+        .classList.remove("bg-red-600", "text-white");
+      document
+        .getElementById("galleryBtn")
+        .classList.add("bg-gray-200", "text-gray-700");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,62 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# FastAPI auto-reload file
+*.reload
+
+# Logs and local database
+*.log
+*.sqlite3
+*.db
+
+# Pydantic cache (optional)
+__pydantic__/ 
+
+# VSCode settings
+.vscode/
+
+# macOS system files
+.DS_Store
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# mypy and pylint
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pylint.d/
+
+# Jupyter Notebook checkpoints (if any)
+.ipynb_checkpoints
+
+# PyInstaller
+dist/
+build/
+*.spec
+
+# Local test or dev files
+.env
+.env.*
+
+# IDEs
+.idea/
+*.swp
+*.swo
+
+# Docker files (optional if you use Docker)
+*.pid

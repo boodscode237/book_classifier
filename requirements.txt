@@ -1,0 +1,15 @@
+fastapi
+sqlalchemy
+psycopg2-binary
+python-multipart
+torch
+torchvision
+easyocr
+opencv-python-headless
+scikit-learn
+pandas
+numpy
+pillow
+tqdm
+pytest
+requests
